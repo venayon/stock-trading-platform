@@ -1,0 +1,364 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Trade Processor API",
+    "description": "Processed trade queries and canonical source replay. Processing is at least once; output records may be duplicated after a crash.",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8082",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/api/process": {
+      "post": {
+        "tags": [
+          "processor-api"
+        ],
+        "summary": "Re-enqueue a retained published trade; COMPLETE trades are a no-op",
+        "description": "202 acknowledges source enqueue only. Replay cannot repair malformed bytes or overwrite a conflicting processed identity.",
+        "operationId": "replay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Canonical source event enqueued; poll GET for completion",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayAccepted"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already COMPLETE; no enqueue",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Canonical source not found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Canonical source has not been published",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable; retry later",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processed": {
+      "get": {
+        "tags": [
+          "processor-api"
+        ],
+        "summary": "Query processed trades with bounded pagination",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "processingStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processed/{id}": {
+      "get": {
+        "tags": [
+          "processor-api"
+        ],
+        "summary": "Get processing state and routed output coordinates",
+        "operationId": "find",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeView"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReplayRequest": {
+        "type": "object",
+        "properties": {
+          "tradeId": {
+            "type": "string"
+          }
+        }
+      },
+      "Point": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "partition": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReplayAccepted": {
+        "type": "object",
+        "properties": {
+          "tradeId": {
+            "type": "string"
+          },
+          "replayPublication": {
+            "$ref": "#/components/schemas/Point"
+          }
+        }
+      },
+      "TradeDataView": {
+        "type": "object",
+        "properties": {
+          "tradeDate": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "counterparty": {
+            "type": "string"
+          }
+        }
+      },
+      "TradeView": {
+        "type": "object",
+        "properties": {
+          "tradeId": {
+            "type": "string"
+          },
+          "processingStatus": {
+            "type": "string"
+          },
+          "trade": {
+            "$ref": "#/components/schemas/TradeDataView"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "output": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "targetPartition": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routeVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProblemDetail": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "properties": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {}
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeView"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  }
+}

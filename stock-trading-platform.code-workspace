@@ -1,0 +1,31 @@
+{
+  "folders": [
+    { "name": "🏗 infra (docker)",  "path": "infra" },
+    { "name": "📜 schemas (avro)",  "path": "schemas" },
+    { "name": "🚀 ms_trader",       "path": "ms_trader" },
+    { "name": "⚙️ ms_trade_processor", "path": "ms_trade_processor" },
+    { "name": "🧪 load-generator",  "path": "load-generator" },
+    { "name": "📚 docs",            "path": "docs" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/target": true,
+      "**/node_modules": true,
+      "**/playwright-report": true,
+      "**/test-results": true
+    },
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "editor.formatOnSave": true
+  },
+  "extensions": {
+    "recommendations": [
+      "vscjava.vscode-java-pack",
+      "vmware.vscode-spring-boot",
+      "vscjava.vscode-spring-boot-dashboard",
+      "ms-azuretools.vscode-docker",
+      "ms-playwright.playwright",
+      "redhat.vscode-yaml",
+      "editorconfig.editorconfig"
+    ]
+  }
+}

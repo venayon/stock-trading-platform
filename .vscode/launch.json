@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug ms_trader",
+      "request": "launch",
+      "mainClass": "com.example.trader.TraderApplication",
+      "projectName": "ms_trader"
+    },
+    {
+      "type": "java",
+      "name": "Debug ms_trade_processor",
+      "request": "launch",
+      "mainClass": "com.example.processor.ProcessorApplication",
+      "projectName": "ms_trade_processor"
+    }
+  ]
+}

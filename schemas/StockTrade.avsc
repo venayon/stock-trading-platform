@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "StockTrade",
+  "namespace": "com.example.finance.avro",
+  "fields": [
+    { "name": "tradeId",      "type": "string" },
+    { "name": "tradeDate",    "type": { "type": "int", "logicalType": "date" } },
+    { "name": "side",         "type": { "type": "enum", "name": "Side", "symbols": ["BUY","SELL"] } },
+    { "name": "symbol",       "type": "string" },
+    { "name": "quantity",     "type": "long" },
+    { "name": "price",        "type": { "type": "bytes", "logicalType": "decimal", "precision": 18, "scale": 6 } },
+    { "name": "currency",     "type": "string", "default": "USD" },
+    { "name": "counterparty", "type": ["null","string"], "default": null },
+    { "name": "creationDate", "type": "date" }
+  ]
+}

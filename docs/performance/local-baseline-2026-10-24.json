@@ -1,0 +1,458 @@
+{
+  "runId": "c4137976-31f1-4be0-887c-d651329c980c",
+  "createdAt": "2026-10-24T05:36:58.955Z",
+  "config": {
+    "runId": "c4137976-31f1-4be0-887c-d651329c980c",
+    "traderUrl": "http://localhost:8081",
+    "processorUrl": "http://localhost:8082",
+    "rates": [
+      10,
+      20
+    ],
+    "durationSeconds": 30,
+    "warmupSeconds": 10,
+    "baselineSeconds": 5,
+    "concurrency": 16,
+    "observers": 32,
+    "drainSeconds": 60,
+    "sampleEvery": 10,
+    "httpP95Ms": 250,
+    "e2eP95Ms": 5000,
+    "maxErrorRate": 0.01,
+    "maxDroppedRate": 0.01,
+    "maxBacklogGrowth": 0.5,
+    "hotKeyRatio": 0,
+    "dockerStats": true,
+    "out": "reports/perf"
+  },
+  "environment": {
+    "node": "v20.16.0",
+    "platform": "darwin",
+    "architecture": "x64",
+    "logicalHostCpus": 16,
+    "hostMemoryGiB": 32,
+    "docker": {
+      "cpus": 16,
+      "memoryGiB": 7.749046325683594
+    }
+  },
+  "stages": [
+    {
+      "label": "stage-1",
+      "offeredRps": 10,
+      "durationSeconds": 30,
+      "startEpochMs": 1792820234967,
+      "offeredEndEpochMs": 1792820264967,
+      "acceptanceEndEpochMs": 1792820264967,
+      "endEpochMs": 1792820266381,
+      "expectedArrivals": 300,
+      "issued": 300,
+      "dropped": 0,
+      "schedulerDropped": 0,
+      "concurrencyDropped": 0,
+      "errorRate": 0,
+      "droppedRate": 0,
+      "accepted": 300,
+      "acceptedRps": 10,
+      "httpAll": {
+        "count": 300,
+        "p50Ms": 8.441941000000952,
+        "p95Ms": 12.824468000006163,
+        "p99Ms": 67.2209739999962,
+        "maxMs": 167.95817700000043
+      },
+      "httpSuccessful": {
+        "count": 300,
+        "p50Ms": 8.441941000000952,
+        "p95Ms": 12.824468000006163,
+        "p99Ms": 67.2209739999962,
+        "maxMs": 167.95817700000043
+      },
+      "scheduleDelay": {
+        "count": 300,
+        "p50Ms": 0.18677999999999884,
+        "p95Ms": 1.3215630000013334,
+        "p99Ms": 11.490622000004805,
+        "maxMs": 16.864214000001084
+      },
+      "sampledCompletion": {
+        "count": 30,
+        "p50Ms": 1027.0724249999985,
+        "p95Ms": 1052.388417999995,
+        "p99Ms": 1095.2657680000048,
+        "maxMs": 1095.2657680000048
+      },
+      "completionErrors": [],
+      "observerGetRequests": 378,
+      "reconciled": 300,
+      "mismatches": [],
+      "backlogGrowthPerSecond": 0.1877669363384905,
+      "consumerLagGrowthPerSecond": 0.003323535412117613,
+      "resources": {
+        "trader": {
+          "samples": 30,
+          "counterReset": false,
+          "averageCpuCores": 0.11467629242100916,
+          "p95CpuCores": 0.328546875,
+          "peakRssMiB": 402.484375,
+          "peakHeapUsedMiB": 87.56031799316406,
+          "peakNonHeapUsedMiB": 138.63599395751953,
+          "candidate": {
+            "cpuRequestCores": 0.25,
+            "cpuLimitCores": 0.5,
+            "heapCapMiB": 192,
+            "memoryLimitMiB": 704,
+            "status": "UNVALIDATED_TRIAL_BUDGET"
+          }
+        },
+        "processor": {
+          "samples": 30,
+          "counterReset": false,
+          "averageCpuCores": 0.11891233565085703,
+          "p95CpuCores": 0.33451470588235294,
+          "peakRssMiB": 499.94140625,
+          "peakHeapUsedMiB": 112.92161560058594,
+          "peakNonHeapUsedMiB": 148.5857391357422,
+          "candidate": {
+            "cpuRequestCores": 0.25,
+            "cpuLimitCores": 0.5,
+            "heapCapMiB": 192,
+            "memoryLimitMiB": 832,
+            "status": "UNVALIDATED_TRIAL_BUDGET"
+          }
+        }
+      },
+      "gates": {
+        "httpLatency": true,
+        "completionLatency": true,
+        "errors": true,
+        "arrivalSchedule": true,
+        "reconciliation": true,
+        "completionObserver": true,
+        "backlog": true,
+        "consumerBacklog": true,
+        "telemetry": true
+      },
+      "passed": true
+    },
+    {
+      "label": "stage-2",
+      "offeredRps": 20,
+      "durationSeconds": 30,
+      "startEpochMs": 1792820266408,
+      "offeredEndEpochMs": 1792820296409,
+      "acceptanceEndEpochMs": 1792820296409,
+      "endEpochMs": 1792820301125,
+      "expectedArrivals": 600,
+      "issued": 597,
+      "dropped": 3,
+      "schedulerDropped": 3,
+      "concurrencyDropped": 0,
+      "errorRate": 0,
+      "droppedRate": 0.005,
+      "accepted": 597,
+      "acceptedRps": 19.89933668877704,
+      "httpAll": {
+        "count": 597,
+        "p50Ms": 8.03384399999777,
+        "p95Ms": 13.223765999995521,
+        "p99Ms": 65.19122599999537,
+        "maxMs": 436.1600310000067
+      },
+      "httpSuccessful": {
+        "count": 597,
+        "p50Ms": 8.03384399999777,
+        "p95Ms": 13.223765999995521,
+        "p99Ms": 65.19122599999537,
+        "maxMs": 436.1600310000067
+      },
+      "scheduleDelay": {
+        "count": 597,
+        "p50Ms": 0.12625800000387244,
+        "p95Ms": 1.386990999999398,
+        "p99Ms": 31.87966199999937,
+        "maxMs": 141.93506499999785
+      },
+      "sampledCompletion": {
+        "count": 59,
+        "p50Ms": 3060.7833189999947,
+        "p95Ms": 5103.899260999999,
+        "p99Ms": 5323.075201999993,
+        "maxMs": 5323.075201999993
+      },
+      "completionErrors": [],
+      "observerGetRequests": 1067,
+      "reconciled": 597,
+      "mismatches": [],
+      "backlogGrowthPerSecond": 2.3781428373805005,
+      "consumerLagGrowthPerSecond": 0.02382068577651166,
+      "resources": {
+        "trader": {
+          "samples": 30,
+          "counterReset": false,
+          "averageCpuCores": 0.1398671390310879,
+          "p95CpuCores": 0.4269412915851272,
+          "peakRssMiB": 409.91796875,
+          "peakHeapUsedMiB": 91.25666046142578,
+          "peakNonHeapUsedMiB": 122.3719253540039,
+          "candidate": {
+            "cpuRequestCores": 0.25,
+            "cpuLimitCores": 0.75,
+            "heapCapMiB": 192,
+            "memoryLimitMiB": 704,
+            "status": "UNVALIDATED_TRIAL_BUDGET"
+          }
+        },
+        "processor": {
+          "samples": 30,
+          "counterReset": false,
+          "averageCpuCores": 0.13214577753669865,
+          "p95CpuCores": 0.28086021505376346,
+          "peakRssMiB": 506.484375,
+          "peakHeapUsedMiB": 108.31450653076172,
+          "peakNonHeapUsedMiB": 134.4610366821289,
+          "candidate": {
+            "cpuRequestCores": 0.25,
+            "cpuLimitCores": 0.5,
+            "heapCapMiB": 192,
+            "memoryLimitMiB": 832,
+            "status": "UNVALIDATED_TRIAL_BUDGET"
+          }
+        }
+      },
+      "gates": {
+        "httpLatency": true,
+        "completionLatency": false,
+        "errors": true,
+        "arrivalSchedule": true,
+        "reconciliation": true,
+        "completionObserver": true,
+        "backlog": false,
+        "consumerBacklog": true,
+        "telemetry": true
+      },
+      "passed": false
+    }
+  ],
+  "limitations": [
+    "Local shared-host measurement; no production capacity claim.",
+    "Sampled completion latency includes polling delay and is an observed upper bound.",
+    "CPU/memory candidates must be rerun under actual CPU limits and JVM heap/memory caps.",
+    "Fixed-arrival load and monitoring/reconciliation traffic share the generator and host."
+  ],
+  "baseline": {
+    "trader": {
+      "samples": 6,
+      "counterReset": false,
+      "averageCpuCores": 0.008529314420803782,
+      "p95CpuCores": 0.04270481927710843,
+      "peakRssMiB": 384.90234375,
+      "peakHeapUsedMiB": 67.56094360351562,
+      "peakNonHeapUsedMiB": 138.2539291381836,
+      "candidate": {
+        "cpuRequestCores": 0.25,
+        "cpuLimitCores": 0.25,
+        "heapCapMiB": 128,
+        "memoryLimitMiB": 640,
+        "status": "UNVALIDATED_TRIAL_BUDGET"
+      }
+    },
+    "processor": {
+      "samples": 6,
+      "counterReset": false,
+      "averageCpuCores": 0.013378486997635934,
+      "p95CpuCores": 0.04989156626506024,
+      "peakRssMiB": 496.953125,
+      "peakHeapUsedMiB": 99.42810821533203,
+      "peakNonHeapUsedMiB": 148.04640197753906,
+      "candidate": {
+        "cpuRequestCores": 0.25,
+        "cpuLimitCores": 0.25,
+        "heapCapMiB": 192,
+        "memoryLimitMiB": 832,
+        "status": "UNVALIDATED_TRIAL_BUDGET"
+      }
+    }
+  },
+  "warmup": {
+    "label": "warmup",
+    "offeredRps": 10,
+    "durationSeconds": 10,
+    "startEpochMs": 1792820224166,
+    "offeredEndEpochMs": 1792820234167,
+    "acceptanceEndEpochMs": 1792820234167,
+    "endEpochMs": 1792820234940,
+    "expectedArrivals": 100,
+    "issued": 100,
+    "dropped": 0,
+    "schedulerDropped": 0,
+    "concurrencyDropped": 0,
+    "errorRate": 0,
+    "droppedRate": 0,
+    "accepted": 100,
+    "acceptedRps": 9.99900009999,
+    "httpAll": {
+      "count": 100,
+      "p50Ms": 8.694244999998773,
+      "p95Ms": 33.43482799999947,
+      "p99Ms": 317.5300150000003,
+      "maxMs": 415.9019580000004
+    },
+    "httpSuccessful": {
+      "count": 100,
+      "p50Ms": 8.694244999998773,
+      "p95Ms": 33.43482799999947,
+      "p99Ms": 317.5300150000003,
+      "maxMs": 415.9019580000004
+    },
+    "scheduleDelay": {
+      "count": 100,
+      "p50Ms": 0.09614400000009482,
+      "p95Ms": 5.3171390000006795,
+      "p99Ms": 47.50229500000023,
+      "maxMs": 132.14831199999935
+    },
+    "sampledCompletion": {
+      "count": 10,
+      "p50Ms": 878.3928899999992,
+      "p95Ms": 1368.8128130000005,
+      "p99Ms": 1368.8128130000005,
+      "maxMs": 1368.8128130000005
+    },
+    "completionErrors": [],
+    "observerGetRequests": 125,
+    "reconciled": 100,
+    "mismatches": [],
+    "backlogGrowthPerSecond": 0.4623099942546659,
+    "consumerLagGrowthPerSecond": 0.09260155209194047,
+    "resources": {
+      "trader": {
+        "samples": 11,
+        "counterReset": false,
+        "averageCpuCores": 0.04745392491467577,
+        "p95CpuCores": 0.06673170731707317,
+        "peakRssMiB": 385.0234375,
+        "peakHeapUsedMiB": 87.56094360351562,
+        "peakNonHeapUsedMiB": 138.2867660522461,
+        "candidate": {
+          "cpuRequestCores": 0.25,
+          "cpuLimitCores": 0.25,
+          "heapCapMiB": 192,
+          "memoryLimitMiB": 640,
+          "status": "UNVALIDATED_TRIAL_BUDGET"
+        }
+      },
+      "processor": {
+        "samples": 11,
+        "counterReset": false,
+        "averageCpuCores": 0.1329778156996587,
+        "p95CpuCores": 0.4095668292682927,
+        "peakRssMiB": 498.0859375,
+        "peakHeapUsedMiB": 115.42810821533203,
+        "peakNonHeapUsedMiB": 148.33493041992188,
+        "candidate": {
+          "cpuRequestCores": 0.25,
+          "cpuLimitCores": 0.75,
+          "heapCapMiB": 192,
+          "memoryLimitMiB": 768,
+          "status": "UNVALIDATED_TRIAL_BUDGET"
+        }
+      }
+    },
+    "gates": {
+      "httpLatency": true,
+      "completionLatency": true,
+      "errors": true,
+      "arrivalSchedule": true,
+      "reconciliation": true,
+      "completionObserver": true,
+      "backlog": true,
+      "consumerBacklog": true,
+      "telemetry": true
+    },
+    "passed": true
+  },
+  "highestPassingOfferedRps": 10,
+  "recommendedTrial": {
+    "offeredRps": 10,
+    "resources": {
+      "trader": {
+        "cpuRequestCores": 0.25,
+        "cpuLimitCores": 0.5,
+        "heapCapMiB": 192,
+        "memoryLimitMiB": 704,
+        "status": "UNVALIDATED_TRIAL_BUDGET"
+      },
+      "processor": {
+        "cpuRequestCores": 0.25,
+        "cpuLimitCores": 0.5,
+        "heapCapMiB": 192,
+        "memoryLimitMiB": 832,
+        "status": "UNVALIDATED_TRIAL_BUDGET"
+      }
+    },
+    "status": "UNVALIDATED_TRIAL_BUDGET",
+    "requires": "Repeat with actual CPU/memory limits, longer soak and target workload"
+  },
+  "result": "FAIL",
+  "warnings": [],
+  "dockerSamples": 12,
+  "infrastructure": [
+    {
+      "name": "stock-trading-grafana-1",
+      "peakCpuCores": 0.0969,
+      "peakMemoryMiB": 132.3
+    },
+    {
+      "name": "stock-trading-prometheus-1",
+      "peakCpuCores": 0.1112,
+      "peakMemoryMiB": 91.87
+    },
+    {
+      "name": "stock-trading-kafdrop-1",
+      "peakCpuCores": 0.0392,
+      "peakMemoryMiB": 441.9
+    },
+    {
+      "name": "stock-trading-schema-registry-1",
+      "peakCpuCores": 0.1103,
+      "peakMemoryMiB": 384
+    },
+    {
+      "name": "stock-trading-kafka-1",
+      "peakCpuCores": 2.0347,
+      "peakMemoryMiB": 675.7
+    },
+    {
+      "name": "stock-trading-mongodb-1",
+      "peakCpuCores": 0.502,
+      "peakMemoryMiB": 140.1
+    }
+  ],
+  "generator": {
+    "samples": 89,
+    "counterReset": false,
+    "averageCpuCores": 0.2013762522061956,
+    "p95CpuCores": 1.0567492063492063,
+    "peakRssMiB": 173.69140625,
+    "peakHeapUsedMiB": null,
+    "peakNonHeapUsedMiB": null,
+    "candidate": null
+  },
+  "evidence": {
+    "sourceRunId": "c4137976-31f1-4be0-887c-d651329c980c",
+    "command": "RATES=10,20 DURATION_SECONDS=30 WARMUP_SECONDS=10 BASELINE_SECONDS=5 npm run test:perf",
+    "sourceArtifacts": "load-generator/reports/perf/c4137976-31f1-4be0-887c-d651329c980c",
+    "generatorSummary": "Derived after the run from its recorded worker CPU/RSS samples",
+    "postRunAudit": {
+      "ambiguousOutcomes": 0,
+      "allIssuedRequestsReturned202": true,
+      "note": "Audit of the raw source matrix; the explicit ambiguity gate was added after this matrix and passes its recorded requests."
+    },
+    "rawSha256": {
+      "requests.ndjson": "2a747108ca2d66ccf051d464fb7126b7e94dc6f278511128846f0d7d2eff2a80",
+      "resources.ndjson": "cf13c533183377135811134ecbf5e3f4450509906541b7fc944f358f8cb6e60f",
+      "docker.ndjson": "c8a8f7516416cea94aa821682dc29b6ef656b27a923ea600511992945e411f8c"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# Java
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+
+# VS Code (keep tasks/launch, ignore local overrides)
+.vscode/*.local.json
+
+# OS / IDE
+.DS_Store
+.idea/
+*.iml

@@ -1,0 +1,3 @@
+tradeDate,side,symbol,quantity,price,currency,counterparty
+2026-10-24,BUY,AAPL,10,123.450000,USD,Dealer A
+2026-10-24,SELL,MSFT,5,42.25,GBP,"Dealer, B"

@@ -1,0 +1,178 @@
+name: stock-trading
+
+# Local single-node demo. Application runs on the host; Prometheus scrapes through host.docker.internal.
+services:
+  feed-postgres:
+    image: postgres:16.6-alpine
+    ports: [ "127.0.0.1:${FEED_POSTGRES_PORT:-5433}:5432" ]
+    environment:
+      POSTGRES_DB: feed_batch
+      POSTGRES_USER: ${FEED_POSTGRES_USER:-feed_batch}
+      POSTGRES_PASSWORD: ${FEED_POSTGRES_PASSWORD:?Run python3 scripts/init-monitoring-env.py first}
+    command: [ "postgres", "-c", "max_connections=20", "-c", "shared_buffers=32MB" ]
+    volumes: [ "feed-postgres-data:/var/lib/postgresql/data" ]
+    networks: [ trading-net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d feed_batch" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 256m
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.4
+    hostname: kafka
+    ports:
+      - "127.0.0.1:9092:9092"
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks: [ trading-net ]
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list" ]
+      interval: 10s
+      timeout: 8s
+      retries: 18
+      start_period: 30s
+
+  topic-init:
+    image: confluentinc/cp-kafka:7.9.4
+    entrypoint: [ "/bin/bash", "/scripts/init-topics.sh" ]
+    volumes: [ "./scripts:/scripts:ro" ]
+    networks: [ trading-net ]
+    depends_on:
+      kafka: { condition: service_healthy }
+    restart: "no"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.9.4
+    ports: [ "127.0.0.1:8085:8081" ]
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: BACKWARD_TRANSITIVE
+      SCHEMA_REGISTRY_HEAP_OPTS: -Xms128m -Xmx256m
+    networks: [ trading-net ]
+    depends_on:
+      kafka: { condition: service_healthy }
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "--silent", "http://localhost:8081/subjects" ]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+
+  schema-init:
+    image: python:3.12.12-alpine
+    command: [ "python", "/scripts/init-schema.py" ]
+    volumes: [ "./scripts:/scripts:ro", "../schemas:/schemas:ro" ]
+    networks: [ trading-net ]
+    depends_on:
+      schema-registry: { condition: service_healthy }
+      topic-init: { condition: service_completed_successfully }
+    restart: "no"
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:4.1.0
+    ports: [ "127.0.0.1:9000:9000" ]
+    environment:
+      KAFKA_BROKERCONNECT: kafka:29092
+      SCHEMAREGISTRY_CONNECT: http://schema-registry:8081
+      JVM_OPTS: -Xms64m -Xmx256m
+      CMD_ARGS: --message.format=AVRO --message.keyFormat=DEFAULT
+    networks: [ trading-net ]
+    depends_on:
+      schema-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O - http://localhost:9000/actuator/health >/dev/null" ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports: [ "127.0.0.1:9090:9090" ]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes: [ "./prometheus:/etc/prometheus:ro", "prometheus-data:/prometheus" ]
+    extra_hosts: [ "host.docker.internal:host-gateway" ]
+    networks: [ trading-net ]
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "-", "http://localhost:9090/-/ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    ports: [ "127.0.0.1:3000:3000" ]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Run python3 scripts/init-monitoring-env.py first}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks: [ trading-net ]
+    depends_on:
+      prometheus: { condition: service_healthy }
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "-", "http://localhost:3000/api/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+
+  mongodb:
+    image: mongo:7.0.16
+    ports:
+      - "127.0.0.1:${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - trading-net
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ping: 1})" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  feed-postgres-data:
+  prometheus-data:
+  grafana-data:
+  kafka-data:
+  mongo-data:
+
+networks:
+  trading-net:
+    driver: bridge

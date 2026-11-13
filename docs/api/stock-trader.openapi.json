@@ -1,0 +1,405 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stock Trader API",
+    "description": "Durable MongoDB trade acceptance and side-effect-free validation preview. Pending trades publish asynchronously as Avro events to Kafka.",
+    "version": "0.0.3"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/api/trades": {
+      "post": {
+        "tags": [
+          "trade-controller"
+        ],
+        "summary": "Durably accept an immutable PENDING trade",
+        "description": "Requires a client idempotency key. A matching retry returns the stored trade without creating a duplicate. Acceptance is acknowledged by MongoDB; the durable relay publishes asynchronously. Poll the Location for PUBLISHED and event metadata.",
+        "operationId": "accept",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "1–128 printable ASCII characters; not blank. Exact and case-sensitive. Retain the same key on retries.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TradeValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "New PENDING trade accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Same-key retry; Idempotent-Replay: true",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid key, JSON or trade",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Key already belongs to a different canonical payload",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable or write outcome uncertain; retry the same key",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trades/validate": {
+      "post": {
+        "tags": [
+          "trade-validation-controller"
+        ],
+        "summary": "Validate and preview a canonical trade",
+        "description": "Checks every field and returns normalized input. Does not persist or publish a trade.",
+        "operationId": "validate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TradeValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Valid canonical preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON or trade; field errors where available",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trades/{id}": {
+      "get": {
+        "tags": [
+          "trade-controller"
+        ],
+        "summary": "Read an accepted trade and its publication state",
+        "operationId": "find",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored trade",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed trade ID",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trade ID not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TradeValidationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Trade input shared by acceptance and validation preview. Unknown fields are rejected.",
+        "properties": {
+          "tradeDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Strict ISO date, within signed 32-bit epoch-day range. No market-calendar restriction.",
+            "example": "2026-10-24"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Trimmed and uppercased using Locale.ROOT before matching [A-Z0-9][A-Z0-9.-]{0,15}.",
+            "example": "AAPL"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64",
+            "description": "JSON integer; strings and fractional values are rejected.",
+            "example": 10,
+            "maximum": 9223372036854775807,
+            "minimum": 1
+          },
+          "price": {
+            "description": "Exact positive decimal <= 999999999999.999999 with at most six decimal places after removing trailing zeros. Decimal strings preserve precision in JavaScript. Exponent strings are rejected.",
+            "example": "123.450000",
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^\\+?(?:0*[1-9][0-9]{0,11}(?:\\.[0-9]{1,6}0*)?|0+\\.(?=[0-9]{0,5}[1-9])[0-9]{1,6}0*)$"
+              },
+              {
+                "type": "number",
+                "maximum": 999999999999.999999,
+                "minimum": 0.000001,
+                "multipleOf": 0.000001
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "default": "USD",
+            "description": "Omitted defaults to USD; explicit null is invalid.",
+            "enum": [
+              "USD",
+              "GBP",
+              "EUR"
+            ]
+          },
+          "counterparty": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Trimmed; blank becomes null; maximum 128 UTF-16 code units after trimming."
+          }
+        },
+        "required": [
+          "price",
+          "quantity",
+          "side",
+          "symbol",
+          "tradeDate"
+        ]
+      },
+      "EventMetadata": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "partition": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TradeResponse": {
+        "type": "object",
+        "properties": {
+          "tradeId": {
+            "type": "string"
+          },
+          "publicationStatus": {
+            "type": "string",
+            "description": "PUBLISHED includes acknowledged Kafka metadata; acceptance returns PENDING first.",
+            "enum": [
+              "PENDING",
+              "PUBLISHED"
+            ]
+          },
+          "tradeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "side": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price": {
+            "type": "string",
+            "example": "123.450000"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "counterparty": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event": {
+            "$ref": "#/components/schemas/EventMetadata"
+          }
+        }
+      },
+      "ValidationProblem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      },
+      "TradePreview": {
+        "type": "object",
+        "properties": {
+          "tradeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "side": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "counterparty": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

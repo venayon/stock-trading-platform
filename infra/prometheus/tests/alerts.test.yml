@@ -1,0 +1,69 @@
+rule_files: [ /etc/prometheus/alerts.yml ]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="ms-trader",instance="test:8081"}'
+        values: '0 0 0'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TraderDown
+        exp_alerts:
+          - exp_labels: { job: ms-trader, instance: 'test:8081', severity: critical }
+            exp_annotations: { summary: Trader metrics endpoint is unavailable }
+  - interval: 1m
+    input_series:
+      - series: 'up{job="ms-trader",instance="test:8081"}'
+        values: '1 1 1'
+      - series: 'trades_backlog_poll_success{job="ms-trader",instance="test:8081"}'
+        values: '0 0 0'
+      - series: 'trades_backlog_last_success_timestamp_seconds{job="ms-trader",instance="test:8081"}'
+        values: '0 0 0'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BacklogSamplingStale
+        exp_alerts:
+          - exp_labels: { job: ms-trader, instance: 'test:8081', severity: warning }
+            exp_annotations: { summary: Pending-trade metrics cannot be refreshed }
+  - interval: 1m
+    input_series:
+      - series: 'up{job="ms-trader",instance="test:8081"}'
+        values: '1 1 1'
+      - series: 'trades_pending_oldest_age_seconds{job="ms-trader",instance="test:8081"}'
+        values: '70 130 190'
+      - series: 'trades_backlog_poll_success{job="ms-trader",instance="test:8081"}'
+        values: '1 1 1'
+      - series: 'trades_backlog_last_success_timestamp_seconds{job="ms-trader",instance="test:8081"}'
+        values: '0 60 120'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: PendingTradeTooOld
+        exp_alerts:
+          - exp_labels: { job: ms-trader, instance: 'test:8081', severity: warning }
+            exp_annotations: { summary: A pending trade has waited more than one minute }
+  - interval: 1m
+    input_series:
+      - series: 'up{job="ms-trader",instance="test:8081"}'
+        values: '1 1 1'
+      - series: 'trades_pending_oldest_age_seconds{job="ms-trader",instance="test:8081"}'
+        values: '0 0 0'
+      - series: 'trades_backlog_poll_success{job="ms-trader",instance="test:8081"}'
+        values: '1 1 1'
+      - series: 'trades_backlog_last_success_timestamp_seconds{job="ms-trader",instance="test:8081"}'
+        values: '0 60 120'
+    alert_rule_test:
+      - { eval_time: 2m, alertname: TraderDown, exp_alerts: [ ] }
+      - { eval_time: 2m, alertname: PendingTradeTooOld, exp_alerts: [ ] }
+      - { eval_time: 2m, alertname: BacklogSamplingStale, exp_alerts: [ ] }
+  - interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="ms-trader",uri="/api/trades",status="200"}'
+        values: '0 30 60 90 120 150'
+      - series: 'http_server_requests_seconds_count{job="ms-trader",uri="/api/trades",status="503"}'
+        values: '0 1 2 3 4 5'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TraderHttpErrors
+        exp_alerts:
+          - exp_labels: { job: ms-trader, severity: warning }
+            exp_annotations: { summary: Trader HTTP 5xx ratio exceeds one percent }

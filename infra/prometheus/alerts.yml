@@ -1,0 +1,71 @@
+groups:
+  - name: stock-trader
+    rules:
+      - alert: TraderDown
+        expr: up{job="ms-trader"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: Trader metrics endpoint is unavailable
+      - alert: PendingTradeTooOld
+        expr: |
+          (trades_pending_oldest_age_seconds{job="ms-trader"} > 60)
+          and on(job, instance) (trades_backlog_poll_success{job="ms-trader"} == 1)
+          and on(job, instance) ((time() - trades_backlog_last_success_timestamp_seconds{job="ms-trader"}) < 30)
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: A pending trade has waited more than one minute
+      - alert: BacklogSamplingStale
+        expr: |
+          ((time() - trades_backlog_last_success_timestamp_seconds{job="ms-trader"} > 30)
+          or (trades_backlog_poll_success{job="ms-trader"} == 0))
+          and on(job, instance) (up{job="ms-trader"} == 1)
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: Pending-trade metrics cannot be refreshed
+      - alert: PublicationFailures
+        expr: sum by(job) (increase(trades_publication_retries_total{job="ms-trader"}[5m])) > 0
+        for: 0m
+        labels: { severity: warning }
+        annotations:
+          summary: Publication attempts have failed in the last five minutes
+      - alert: TraderHttpErrors
+        expr: |
+          (sum by(job) (rate(http_server_requests_seconds_count{job="ms-trader",uri=~"/api/.*",status=~"5.."}[5m]))
+          / clamp_min(sum by(job) (rate(http_server_requests_seconds_count{job="ms-trader",uri=~"/api/.*"}[5m])), 0.000001) > 0.01)
+          and on(job) (sum by(job) (increase(http_server_requests_seconds_count{job="ms-trader",uri=~"/api/.*"}[5m])) >= 100)
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: Trader HTTP 5xx ratio exceeds one percent
+      - alert: ProcessorDown
+        expr: up{job="ms-trade-processor"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: Processor metrics endpoint is unavailable
+      - alert: ProcessorDlt
+        expr: sum(increase(trades_dlt_total{job="ms-trade-processor"}[5m])) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: A source event was isolated in the dead-letter topic
+      - alert: ProcessorLagHigh
+        expr: |
+          (sum(trades_consumer_lag{job="ms-trade-processor"}) > 1000)
+          and (min(trades_lag_poll_success{job="ms-trade-processor"}) == 1)
+          and ((time() - min(trades_lag_last_success_timestamp_seconds{job="ms-trade-processor"})) < 30)
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: Processor committed lag exceeds one thousand records
+      - alert: ProcessorLagSamplingStale
+        expr: |
+          ((time() - trades_lag_last_success_timestamp_seconds{job="ms-trade-processor"} > 30)
+          or (trades_lag_poll_success{job="ms-trade-processor"} == 0))
+          and on(job,instance) (up{job="ms-trade-processor"} == 1)
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: Processor committed lag cannot be refreshed

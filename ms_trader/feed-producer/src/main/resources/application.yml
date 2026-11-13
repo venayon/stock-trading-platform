@@ -1,0 +1,101 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8083}
+spring:
+  config:
+    import: optional:file:${FEED_SECRETS_FILE:../../infra/.env}[.properties]
+  datasource:
+    url: ${FEED_JDBC_URL:jdbc:postgresql://localhost:5433/feed_batch}
+    username: ${FEED_POSTGRES_USER:feed_batch}
+    password: ${FEED_POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: ${BATCH_INITIALIZE_SCHEMA:always}
+  application:
+    name: feed-producer
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/trader?serverSelectionTimeoutMS=2000&connectTimeoutMS=1000&socketTimeoutMS=5000}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 3000
+        max.block.ms: 3000
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+        auto.register.schemas: false
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicNameStrategy
+        avro.remove.java.properties: true
+        http.connect.timeout.ms: 3000
+        http.read.timeout.ms: 3000
+        max.retries: 0
+    admin:
+      auto-create: false
+  task:
+    scheduling:
+      pool:
+        size: 2
+  main:
+    banner-mode: "off"
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+trader:
+  publication:
+    enabled: ${PUBLICATION_ENABLED:true}
+    topic: stock-trades
+    poll-interval-ms: 1000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,mongo
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: ${spring.application.name}
+
+feed:
+  directory: ${FEED_DIRECTORY:./var/feeds}
+  interval: ${FEED_INTERVAL:PT2H}
+  initial-delay: ${FEED_INITIAL_DELAY:PT30S}
+  schedule-enabled: ${FEED_SCHEDULE_ENABLED:true}
+  chunk-size: ${FEED_CHUNK_SIZE:1000}
+  max-bad-records: ${FEED_MAX_BAD_RECORDS:10}
+  max-bad-percent: ${FEED_MAX_BAD_PERCENT:100}
+  max-record-bytes: ${FEED_MAX_RECORD_BYTES:65536}
+  policy-id: ${FEED_POLICY_ID:v1}

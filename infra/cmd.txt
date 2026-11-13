@@ -1,0 +1,5 @@
+docker info --format '{{.NCPU}} {{.MemTotal}}' > /tmp/perf-docker-environment.txt
+
+docker compose restart prometheu
+
+curl -fsS http://localhost:8083/api/feeds/executions -o /tmp/feed-final-executions.json

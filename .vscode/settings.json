@@ -1,0 +1,12 @@
+{
+  "security.workspace.trust.enabled": true,
+  "extensions.autoCheckUpdates": true,
+  "extensions.autoUpdate": "onlyEnabledExtensions",
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml",
+    "https://raw.githubusercontent.com/ansible-community/schemas/main/focal/ansible-stable-2.16.json": "**/playbooks/**/*.yml"
+  },
+  "workbench.editorAssociations": {
+    "*.md": "vscode.markdown.preview.editor"
+  }
+}

@@ -1,0 +1,93 @@
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8082}
+spring:
+  application:
+    name: ms-trade-processor
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/processor?serverSelectionTimeoutMS=2000&connectTimeoutMS=1000&socketTimeoutMS=5000}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: stock-trade-processor-v1
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+      max-poll-records: 10
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: io.confluent.kafka.serializers.KafkaAvroDeserializer
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+        specific.avro.reader: true
+        allow.auto.create.topics: false
+        max.poll.interval.ms: 300000
+    listener:
+      ack-mode: record
+      missing-topics-fatal: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 3000
+        max.block.ms: 3000
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+        auto.register.schemas: false
+        value.subject.name.strategy: io.confluent.kafka.serializers.subject.TopicNameStrategy
+        avro.remove.java.properties: true
+        http.connect.timeout.ms: 3000
+        http.read.timeout.ms: 3000
+        max.retries: 0
+    admin:
+      auto-create: false
+  task:
+    scheduling:
+      pool:
+        size: 2
+  main:
+    banner-mode: "off"
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,mongo
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: ${spring.application.name}
+
+processor:
+  concurrency: 3
+  listener:
+    enabled: true
